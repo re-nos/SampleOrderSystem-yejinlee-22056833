@@ -17,6 +17,19 @@ def test_format_order_counts_includes_each_status_and_count():
     assert "2" in result
 
 
+def test_format_order_counts_displays_in_fixed_order_with_producing_note():
+    counts = {"RESERVED": 1, "PRODUCING": 2, "CONFIRMED": 0, "RELEASE": 3}
+
+    result = format_order_counts(counts)
+    lines = [line for line in result.splitlines() if "건" in line]
+
+    assert "RESERVED" in lines[0]
+    assert "CONFIRMED" in lines[1]
+    assert "PRODUCING" in lines[2]
+    assert "생산라인 대기" in lines[2]
+    assert "RELEASE" in lines[3]
+
+
 def test_format_stock_status_list_empty_shows_guidance_message():
     result = format_stock_status_list([])
 
@@ -30,10 +43,10 @@ def test_format_stock_status_list_includes_fields():
 
     result = format_stock_status_list(statuses)
 
-    assert "S001" in result
     assert "시료A" in result
+    assert "4 ea" in result
     assert "부족" in result
-    assert "40.0" in result
+    assert "40%" in result
 
 
 def test_format_order_counts_colors_status_labels():
