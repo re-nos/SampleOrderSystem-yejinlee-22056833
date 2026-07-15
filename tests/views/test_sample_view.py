@@ -58,10 +58,25 @@ def test_format_sample_list_header_is_aligned_and_colored():
     ]
 
     result = format_sample_list(summaries)
-    header_line = result.splitlines()[0]
+    lines = result.splitlines()
 
-    assert header_line.startswith(colors.HEADER)
-    assert "시료ID" in header_line
+    assert lines[0].startswith(colors.HEADER)
+    assert "총 1종" in lines[0]
+    assert lines[1].startswith(colors.HEADER)
+    assert "ID" in lines[1]
 
-    data_line = result.splitlines()[2]
+    data_line = lines[3]
     assert data_line.index("시료A") == 8  # id 컬럼 폭(8) 뒤에 이름 컬럼 시작
+
+
+def test_format_sample_list_shows_units():
+    summaries = [
+        SampleSummary(
+            sample_id="S001", name="시료A", avg_production_time=3.5, yield_rate=0.8, quantity=5
+        )
+    ]
+
+    result = format_sample_list(summaries)
+
+    assert "min/ea" in result
+    assert "5 ea" in result
