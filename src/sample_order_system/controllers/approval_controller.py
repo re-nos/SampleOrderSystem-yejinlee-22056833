@@ -45,8 +45,9 @@ class ApprovalController:
             self._inventory_repo.update(InventoryRecord(sample_id=order.sample_id, quantity=0))
 
             sample = self._sample_repo.get(order.sample_id)
-            actual_production_qty = ceil(shortfall / sample.yield_rate)
-            total_production_turns = ceil(sample.avg_production_time * actual_production_qty)
+            actual_production_qty, total_production_turns = self._estimate_production(
+                sample, shortfall
+            )
 
             self._production_queue_repo.add(
                 ProductionQueueEntry(
@@ -68,14 +69,28 @@ class ApprovalController:
     def check_stock(self, order_id: str) -> StockCheck:
         order = self._order_repo.get(order_id)
         inventory = self._inventory_repo.get(order.sample_id)
+        sample = self._sample_repo.get(order.sample_id)
         shortfall = max(0, order.quantity - inventory.quantity)
+        actual_production_qty, total_production_turns = self._estimate_production(
+            sample, shortfall
+        )
         return StockCheck(
             order_id=order.order_id,
             sample_id=order.sample_id,
             quantity=order.quantity,
             inventory_quantity=inventory.quantity,
             shortfall=shortfall,
+            actual_production_qty=actual_production_qty,
+            total_production_turns=total_production_turns,
         )
+
+    @staticmethod
+    def _estimate_production(sample, shortfall: int):
+        if shortfall <= 0:
+            return 0, 0
+        actual_production_qty = ceil(shortfall / sample.yield_rate)
+        total_production_turns = ceil(sample.avg_production_time * actual_production_qty)
+        return actual_production_qty, total_production_turns
 
     def reject(self, order_id: str) -> Order:
         order = self._require_reserved(order_id, action="거절")

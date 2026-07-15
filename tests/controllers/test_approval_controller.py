@@ -155,6 +155,8 @@ def test_check_stock_reports_shortfall_when_stock_insufficient(
     assert check.quantity == 10
     assert check.inventory_quantity == 4
     assert check.shortfall == 6
+    assert check.actual_production_qty == ceil(6 / 0.4)  # 15
+    assert check.total_production_turns == ceil(3.0 * 15)  # 45
 
 
 def test_check_stock_shortfall_zero_when_stock_sufficient(controller, order_repo, inventory_repo):
@@ -164,3 +166,5 @@ def test_check_stock_shortfall_zero_when_stock_sufficient(controller, order_repo
     check = controller.check_stock("O001")
 
     assert check.shortfall == 0
+    assert check.actual_production_qty == 0
+    assert check.total_production_turns == 0

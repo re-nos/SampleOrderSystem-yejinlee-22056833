@@ -10,3 +10,5 @@ class StockCheck:
     quantity: int
     inventory_quantity: int
     shortfall: int
+    actual_production_qty: int
+    total_production_turns: int

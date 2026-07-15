@@ -82,7 +82,7 @@ def test_format_pending_orders_includes_fields():
     assert "RESERVED" in result
 
 
-def test_format_pending_orders_header_columns_are_separated():
+def test_format_pending_orders_numbers_each_row():
     orders = [
         Order(
             order_id="O001",
@@ -91,18 +91,32 @@ def test_format_pending_orders_header_columns_are_separated():
             quantity=10,
             status=OrderStatus.RESERVED,
             created_at="2026-07-15T10:00:00",
-        )
+        ),
+        Order(
+            order_id="O002",
+            sample_id="S001",
+            customer_name="고객B",
+            quantity=5,
+            status=OrderStatus.RESERVED,
+            created_at="2026-07-15T10:00:00",
+        ),
     ]
 
-    header_line = format_pending_orders(orders).splitlines()[0]
+    result = format_pending_orders(orders)
 
-    # "주문ID"와 "시료ID" 사이에 공백이 있어야 함 (컬럼이 서로 붙어있지 않음)
-    assert "주문ID  " in header_line
+    assert "[1]" in result
+    assert "[2]" in result
 
 
-def test_format_stock_check_includes_quantities():
+def test_format_stock_check_shows_shortfall_and_production_estimate():
     check = StockCheck(
-        order_id="O001", sample_id="S001", quantity=10, inventory_quantity=4, shortfall=6
+        order_id="O001",
+        sample_id="S001",
+        quantity=10,
+        inventory_quantity=4,
+        shortfall=6,
+        actual_production_qty=15,
+        total_production_turns=45,
     )
 
     result = format_stock_check(check)
@@ -110,3 +124,22 @@ def test_format_stock_check_includes_quantities():
     assert "4" in result
     assert "10" in result
     assert "6" in result
+    assert "15" in result
+    assert "45" in result
+    assert "부족" in result
+
+
+def test_format_stock_check_sufficient_stock_message():
+    check = StockCheck(
+        order_id="O001",
+        sample_id="S001",
+        quantity=10,
+        inventory_quantity=20,
+        shortfall=0,
+        actual_production_qty=0,
+        total_production_turns=0,
+    )
+
+    result = format_stock_check(check)
+
+    assert "충분" in result
