@@ -82,6 +82,24 @@ def test_format_pending_orders_includes_fields():
     assert "RESERVED" in result
 
 
+def test_format_pending_orders_header_columns_are_separated():
+    orders = [
+        Order(
+            order_id="O001",
+            sample_id="S001",
+            customer_name="고객A",
+            quantity=10,
+            status=OrderStatus.RESERVED,
+            created_at="2026-07-15T10:00:00",
+        )
+    ]
+
+    header_line = format_pending_orders(orders).splitlines()[0]
+
+    # "주문ID"와 "시료ID" 사이에 공백이 있어야 함 (컬럼이 서로 붙어있지 않음)
+    assert "주문ID  " in header_line
+
+
 def test_format_stock_check_includes_quantities():
     check = StockCheck(
         order_id="O001", sample_id="S001", quantity=10, inventory_quantity=4, shortfall=6
