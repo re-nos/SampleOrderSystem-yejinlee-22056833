@@ -48,6 +48,19 @@ def test_generate_orders_are_all_reserved(tmp_path):
     assert all(order.status is OrderStatus.RESERVED for order in order_repo.list())
 
 
+def test_generate_uses_ui_example_style_sample_names_and_ids(tmp_path):
+    data_dir = os.path.join(tmp_path, "data")
+
+    generate(sample_count=5, order_count=3, seed=1, data_dir=data_dir)
+
+    sample_repo, _, order_repo = _repos(data_dir)
+    samples = sample_repo.list()
+
+    assert samples[0].sample_id == "S-001"
+    assert "웨이퍼" in samples[0].name or "에피택셜" in samples[0].name or "기판" in samples[0].name
+    assert all(order.order_id.startswith("ORD-") for order in order_repo.list())
+
+
 def test_generate_is_reproducible_with_same_seed(tmp_path):
     data_dir_a = os.path.join(tmp_path, "a")
     data_dir_b = os.path.join(tmp_path, "b")
