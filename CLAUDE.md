@@ -18,11 +18,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 테스트
 
-- 테스트 프레임워크: pytest
+- 테스트 프레임워크: pytest (`requirements.txt`에 포함, `pip install -r requirements.txt`로 설치)
 - 테스트 전체 실행: `pytest`
-- 단일 테스트 파일 실행: `pytest tests/test_파일명.py`
-- 단일 테스트 함수 실행: `pytest tests/test_파일명.py::test_함수명`
-- (`pytest`가 아직 의존성에 추가되지 않았다면 `pip install pytest` 후 사용)
+- 단일 테스트 파일 실행: `pytest tests/경로/test_파일명.py`
+- 단일 테스트 함수 실행: `pytest tests/경로/test_파일명.py::test_함수명`
+- `pytest.ini`에서 `pythonpath = src`를 설정하여 `src/sample_order_system` 패키지를 별도 설치 없이 임포트
 
 ## 커밋 컨벤션
 
@@ -72,9 +72,23 @@ chore: 의존성 버전 업데이트
 
 ## 아키텍처
 
-MVC 패턴을 따르며, 책임 분리는 다음과 같습니다.
-- **Model**: 시료(Sample), 주문(Order), 생산 라인(ProductionLine) 등 도메인 엔티티 + JSON 파일 기반 Repository(CRUD)
+MVC 패턴을 따르며, 소스는 `src/sample_order_system/` 아래에 위치합니다 (테스트 시 `pytest.ini`의 `pythonpath = src`로 임포트).
+
+```
+src/sample_order_system/
+├── models/       # Sample, Order(+OrderStatus), InventoryRecord, ProductionQueueEntry dataclass 엔티티
+├── storage/      # json_file_storage.py — 원자적(atomic) JSON read/write 저수준 계층
+├── repository/   # Repository[T] 추상 인터페이스 + JsonRepository 공통 CRUD + SampleRepository/OrderRepository
+├── controllers/  # 유스케이스별 컨트롤러 (Phase 1부터 순차 추가)
+├── views/        # 콘솔 입출력, 메뉴 라우팅 (Phase 1부터 순차 추가)
+├── common/       # exceptions.py(DomainError 계층), logging_config.py
+└── app.py        # 조립부(composition root), 메인 진입점 (Phase 6에서 추가)
+```
+
+- **Model**: 도메인 엔티티(dataclass) + `JsonRepository`를 통한 CRUD. Repository는 순수 CRUD만 담당하며 비즈니스 로직(상태 전이, 생산량 계산 등)은 Controller가 담당
 - **Controller**: 메뉴별 흐름 제어(시료 관리/주문/승인·거절/모니터링/생산 라인/출고) 및 상태 전이 로직(`RESERVED → REJECTED/PRODUCING/CONFIRMED → RELEASE`)
 - **View**: 콘솔 입출력 전담, 비즈니스 로직 없음
+- **공통 예외**: 모든 계층은 `common/exceptions.py`의 `DomainError` 하위 클래스(`NotFoundError`/`ValidationError`/`InvalidStateTransitionError`)만 사용하고, View에서 사용자 메시지로 변환
+- 런타임 JSON 데이터 파일은 `data/`에 저장되며 git 추적 대상이 아님 (`.gitignore` 처리, 테스트는 `tmp_path` 임시 디렉터리 사용)
 
 세부 모듈 구성은 코드가 추가되는 대로 이 섹션에 갱신합니다.
