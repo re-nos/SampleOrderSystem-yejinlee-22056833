@@ -46,3 +46,43 @@ eb0b2a6 feat: sample_view에 정렬/색상 적용
 3279a71 feat: monitoring_view에 정렬/색상 적용
 8a4c48d feat: 콘솔 UI 정렬/색상 적용, 메뉴 복귀 확인 단계 추가, 턴 완료 메시지 조건부 출력
 ```
+
+---
+
+## 2026-07-15: 승인/거절 메뉴에 대기 목록 및 재고 확인 표시 추가
+
+### 요청 내용
+주문 승인/거절 메뉴에서 승인/거절 전에 승인 대기 중인 예약(RESERVED) 목록을 표로 출력하고, 승인/거절할 주문 ID를 입력하면 재고·주문 수량·부족분을 보여준 뒤 승인/거절을 선택하도록 변경.
+
+### 변경 내용
+
+| 영역 | 파일 | 내용 |
+|---|---|---|
+| 모델 | `models/stock_check.py` | `StockCheck` DTO (`order_id`, `sample_id`, `quantity`, `inventory_quantity`, `shortfall`) 신규 추가 |
+| Controller | `controllers/approval_controller.py` | `list_pending_orders()` — `RESERVED` 상태 주문만 반환. `check_stock(order_id)` — 주문 수량/현재 재고/부족분(`max(0, 주문수량-재고)`) 계산 |
+| View | `views/approval_view.py` | `format_pending_orders(orders)` — 대기 주문 표(정렬/상태색상 적용), `format_stock_check(check)` — 재고/주문수량/부족분 출력 |
+| 앱 통합 | `app.py` | `_handle_approval()` 흐름을 "대기 목록 출력 → 주문 ID 입력 → 재고 확인 출력 → 승인/거절 선택"으로 변경 (기존 입력 개수는 그대로 유지: 주문 ID, 승인/거절 여부) |
+| 버그 수정 | `views/approval_view.py` | 수동 검증 중 발견한 정렬 버그 수정 — "주문ID" 헤더 라벨이 컬럼 폭(6)과 같아 다음 컬럼과 붙어 보이던 문제, 폭을 8로 조정 |
+
+### 테스트 결과
+
+```
+130 passed
+```
+
+- 신규: `tests/models/test_stock_check_model.py`, `ApprovalController.list_pending_orders`/`check_stock` 테스트, `approval_view.format_pending_orders`/`format_stock_check` 테스트(정렬 검증 포함)
+- 갱신: `tests/test_app.py`에 승인 흐름에서 대기 목록·재고 확인 출력이 나타나는지 검증하는 assertion 추가 (입력 시나리오 자체는 변경 없음)
+
+### 수동 검증
+
+`python -m sample_order_system.app`에 해당하는 흐름을 재현해 승인 메뉴 진입 시 대기 주문 표가 먼저 출력되고, 주문 ID 입력 후 재고/주문수량/부족분이 표시된 다음 승인/거절을 선택하는 흐름을 확인. 이 과정에서 헤더 정렬 버그를 발견해 함께 수정.
+
+### 커밋 이력
+
+```
+a9cfe9a feat: StockCheck 모델 추가
+616218c feat: ApprovalController에 list_pending_orders/check_stock 추가
+f7d76ca feat: approval_view에 대기 목록/재고 확인 출력 함수 추가
+27b0de4 feat: 승인/거절 메뉴에 대기 목록 및 재고 확인 표시 통합
+8a0c155 fix: 승인 대기 목록 표의 주문ID 컬럼 폭 정렬 버그 수정
+```
