@@ -2,13 +2,15 @@ from typing import List, Optional
 
 from sample_order_system.models.order import Order
 from sample_order_system.models.production_queue import ProductionQueueEntry
+from sample_order_system.views import colors
 
 
 def format_current_job(job: Optional[ProductionQueueEntry]) -> str:
     if job is None:
         return "현재 진행 중인 생산 작업이 없습니다."
+    header = colors.colorize("[진행 중]", colors.HEADER)
     return (
-        f"[진행 중] 주문 {job.order_id} (시료 {job.sample_id}) "
+        f"{header} 주문 {job.order_id} (시료 {job.sample_id}) "
         f"남은 턴: {job.remaining_turns}/{job.total_production_turns}"
     )
 
@@ -23,5 +25,11 @@ def format_waiting_jobs(jobs: List[ProductionQueueEntry]) -> str:
 def format_turn_advance_result(completed_orders: List[Order]) -> str:
     if not completed_orders:
         return "이번 턴에 완료된 생산 작업이 없습니다."
-    lines = [f"주문 {order.order_id} 생산 완료 → {order.status.value}" for order in completed_orders]
+    lines = []
+    for order in completed_orders:
+        status_cell = colors.colorize(
+            order.status.value, colors.order_status_color(order.status.value)
+        )
+        prefix = colors.colorize(f"주문 {order.order_id} 생산 완료 →", colors.SUCCESS)
+        lines.append(f"{prefix} {status_cell}")
     return "\n".join(lines)
