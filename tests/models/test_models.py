@@ -58,11 +58,13 @@ def test_production_queue_entry_fields():
     entry = ProductionQueueEntry(
         order_id="O001",
         sample_id="S001",
+        shortfall=10,
         actual_production_qty=7,
         total_production_turns=21,
         remaining_turns=15,
     )
 
+    assert entry.shortfall == 10
     assert entry.actual_production_qty == 7
     assert entry.total_production_turns == 21
     assert entry.remaining_turns == 15
