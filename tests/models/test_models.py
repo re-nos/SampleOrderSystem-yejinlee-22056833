@@ -1,15 +1,15 @@
 from sample_order_system.models.inventory import InventoryRecord
 from sample_order_system.models.order import Order, OrderStatus
 from sample_order_system.models.production_queue import ProductionQueueEntry
-from sample_order_system.models.sample import Sample
+from sample_order_system.models.sample import Sample, SampleSummary
 
 
 def test_sample_fields():
-    sample = Sample(sample_id="S001", name="시료A", avg_production_time=3, yield_rate=0.8)
+    sample = Sample(sample_id="S001", name="시료A", avg_production_time=3.5, yield_rate=0.8)
 
     assert sample.sample_id == "S001"
     assert sample.name == "시료A"
-    assert sample.avg_production_time == 3
+    assert sample.avg_production_time == 3.5
     assert sample.yield_rate == 0.8
 
 
@@ -39,6 +39,19 @@ def test_inventory_record_fields():
 
     assert record.sample_id == "S001"
     assert record.quantity == 5
+
+
+def test_sample_summary_fields():
+    summary = SampleSummary(
+        sample_id="S001",
+        name="시료A",
+        avg_production_time=3.5,
+        yield_rate=0.8,
+        quantity=5,
+    )
+
+    assert summary.sample_id == "S001"
+    assert summary.quantity == 5
 
 
 def test_production_queue_entry_fields():

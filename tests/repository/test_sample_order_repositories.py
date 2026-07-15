@@ -19,7 +19,7 @@ def order_repository(tmp_path):
 
 
 def test_sample_repository_crud(sample_repository):
-    sample = Sample(sample_id="S001", name="시료A", avg_production_time=3, yield_rate=0.8)
+    sample = Sample(sample_id="S001", name="시료A", avg_production_time=3.5, yield_rate=0.8)
 
     sample_repository.add(sample)
 
