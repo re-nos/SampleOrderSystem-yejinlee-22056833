@@ -1,6 +1,11 @@
 from sample_order_system.models.order import Order, OrderStatus
+from sample_order_system.models.stock_check import StockCheck
 from sample_order_system.views import colors
-from sample_order_system.views.approval_view import format_approval_result
+from sample_order_system.views.approval_view import (
+    format_approval_result,
+    format_pending_orders,
+    format_stock_check,
+)
 
 
 def test_format_approval_result_confirmed():
@@ -48,3 +53,42 @@ def test_format_approval_result_colors_status():
     result = format_approval_result(order)
 
     assert colors.order_status_color("CONFIRMED") + "CONFIRMED" in result
+
+
+def test_format_pending_orders_empty_shows_guidance_message():
+    result = format_pending_orders([])
+
+    assert "없습니다" in result
+
+
+def test_format_pending_orders_includes_fields():
+    orders = [
+        Order(
+            order_id="O001",
+            sample_id="S001",
+            customer_name="고객A",
+            quantity=10,
+            status=OrderStatus.RESERVED,
+            created_at="2026-07-15T10:00:00",
+        )
+    ]
+
+    result = format_pending_orders(orders)
+
+    assert "O001" in result
+    assert "S001" in result
+    assert "고객A" in result
+    assert "10" in result
+    assert "RESERVED" in result
+
+
+def test_format_stock_check_includes_quantities():
+    check = StockCheck(
+        order_id="O001", sample_id="S001", quantity=10, inventory_quantity=4, shortfall=6
+    )
+
+    result = format_stock_check(check)
+
+    assert "4" in result
+    assert "10" in result
+    assert "6" in result
