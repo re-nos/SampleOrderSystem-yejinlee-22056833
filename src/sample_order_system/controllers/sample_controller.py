@@ -32,6 +32,9 @@ class SampleController:
     def search_by_name(self, keyword: str) -> List[SampleSummary]:
         return [self._to_summary(sample) for sample in self._sample_repo.search_by_name(keyword)]
 
+    def get_summary(self, sample_id: str) -> SampleSummary:
+        return self._to_summary(self._sample_repo.get(sample_id))
+
     def _to_summary(self, sample: Sample) -> SampleSummary:
         inventory = self._inventory_repo.get(sample.sample_id)
         return SampleSummary(

@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from sample_order_system.common.exceptions import ValidationError
+from sample_order_system.common.exceptions import NotFoundError, ValidationError
 from sample_order_system.controllers.sample_controller import SampleController
 from sample_order_system.models.inventory import InventoryRecord
 from sample_order_system.models.sample import Sample, SampleSummary
@@ -78,3 +78,21 @@ def test_search_by_name_no_match_returns_empty_list(controller):
     )
 
     assert controller.search_by_name("없는이름") == []
+
+
+def test_get_summary_returns_sample_with_quantity(controller):
+    controller.register_sample(
+        sample_id="S001", name="시료A", avg_production_time=3.5, yield_rate=0.8
+    )
+    controller._inventory_repo.update(InventoryRecord(sample_id="S001", quantity=7))
+
+    summary = controller.get_summary("S001")
+
+    assert summary == SampleSummary(
+        sample_id="S001", name="시료A", avg_production_time=3.5, yield_rate=0.8, quantity=7
+    )
+
+
+def test_get_summary_missing_raises_not_found_error(controller):
+    with pytest.raises(NotFoundError):
+        controller.get_summary("UNKNOWN")
