@@ -1,9 +1,11 @@
 from math import ceil
+from typing import List
 
 from sample_order_system.common.exceptions import InvalidStateTransitionError
 from sample_order_system.models.inventory import InventoryRecord
 from sample_order_system.models.order import Order, OrderStatus
 from sample_order_system.models.production_queue import ProductionQueueEntry
+from sample_order_system.models.stock_check import StockCheck
 from sample_order_system.repository.inventory_repository import InventoryRepository
 from sample_order_system.repository.order_repository import OrderRepository
 from sample_order_system.repository.production_queue_repository import (
@@ -59,6 +61,21 @@ class ApprovalController:
             order.status = OrderStatus.PRODUCING
 
         return self._order_repo.update(order)
+
+    def list_pending_orders(self) -> List[Order]:
+        return [o for o in self._order_repo.list() if o.status == OrderStatus.RESERVED]
+
+    def check_stock(self, order_id: str) -> StockCheck:
+        order = self._order_repo.get(order_id)
+        inventory = self._inventory_repo.get(order.sample_id)
+        shortfall = max(0, order.quantity - inventory.quantity)
+        return StockCheck(
+            order_id=order.order_id,
+            sample_id=order.sample_id,
+            quantity=order.quantity,
+            inventory_quantity=inventory.quantity,
+            shortfall=shortfall,
+        )
 
     def reject(self, order_id: str) -> Order:
         order = self._require_reserved(order_id, action="거절")

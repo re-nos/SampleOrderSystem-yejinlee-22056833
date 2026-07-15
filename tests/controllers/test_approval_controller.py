@@ -126,3 +126,41 @@ def test_reject_non_reserved_order_raises_invalid_state_transition_error(
 
     with pytest.raises(InvalidStateTransitionError):
         controller.reject("O001")
+
+
+def test_list_pending_orders_returns_only_reserved(controller, order_repo):
+    _reserved_order(order_repo, order_id="O001")
+    _reserved_order(order_repo, order_id="O002")
+    controller.reject("O002")
+
+    pending = controller.list_pending_orders()
+
+    assert [o.order_id for o in pending] == ["O001"]
+
+
+def test_list_pending_orders_empty_when_none_reserved(controller):
+    assert controller.list_pending_orders() == []
+
+
+def test_check_stock_reports_shortfall_when_stock_insufficient(
+    controller, order_repo, inventory_repo
+):
+    inventory_repo.update(InventoryRecord(sample_id="S001", quantity=4))
+    _reserved_order(order_repo, quantity=10)
+
+    check = controller.check_stock("O001")
+
+    assert check.order_id == "O001"
+    assert check.sample_id == "S001"
+    assert check.quantity == 10
+    assert check.inventory_quantity == 4
+    assert check.shortfall == 6
+
+
+def test_check_stock_shortfall_zero_when_stock_sufficient(controller, order_repo, inventory_repo):
+    inventory_repo.update(InventoryRecord(sample_id="S001", quantity=20))
+    _reserved_order(order_repo, quantity=10)
+
+    check = controller.check_stock("O001")
+
+    assert check.shortfall == 0
