@@ -58,3 +58,17 @@ def test_release_twice_raises(controller, order_repo):
 
     with pytest.raises(InvalidStateTransitionError):
         controller.release("O001")
+
+
+def test_list_releasable_orders_returns_only_confirmed(controller, order_repo):
+    order_repo.add(_order("O001", OrderStatus.CONFIRMED))
+    order_repo.add(_order("O002", OrderStatus.RESERVED))
+    order_repo.add(_order("O003", OrderStatus.CONFIRMED))
+
+    releasable = controller.list_releasable_orders()
+
+    assert [o.order_id for o in releasable] == ["O001", "O003"]
+
+
+def test_list_releasable_orders_empty_when_none_confirmed(controller):
+    assert controller.list_releasable_orders() == []
