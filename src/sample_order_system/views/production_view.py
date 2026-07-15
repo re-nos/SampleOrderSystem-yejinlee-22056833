@@ -8,7 +8,7 @@ from sample_order_system.views.text_width import pad
 
 _SEPARATOR = "-" * 71
 
-_COLS = {"order": 6, "id": 14, "sample": 20, "qty": 10}
+_COLS = {"order": 6, "id": 20, "sample": 20, "qty": 10}
 
 
 def format_current_job_detail(detail: Optional[ProductionJobDetail]) -> str:

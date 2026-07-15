@@ -6,7 +6,7 @@ from sample_order_system.views.text_width import pad
 
 _SEPARATOR = "-" * 71
 
-_COLS = {"num": 6, "id": 14, "customer": 14, "sample_id": 10, "quantity": 8}
+_COLS = {"num": 6, "id": 20, "customer": 14, "sample_id": 10, "quantity": 8}
 
 
 def format_release_result(order: Order) -> str:

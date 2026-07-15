@@ -70,3 +70,20 @@ def test_format_releasable_orders_numbers_each_row():
     assert "O001" in result
     assert "고객B" in result
     assert "5 ea" in result
+
+
+def test_format_releasable_orders_long_order_id_does_not_collide_with_next_column():
+    orders = [
+        Order(
+            order_id="ORD-20260715-0001",
+            sample_id="S001",
+            customer_name="고객A",
+            quantity=5,
+            status=OrderStatus.CONFIRMED,
+            created_at="2026-07-15T10:00:00",
+        )
+    ]
+
+    data_line = format_releasable_orders(orders).splitlines()[3]
+
+    assert "ORD-20260715-0001 " in data_line

@@ -108,6 +108,23 @@ def test_format_pending_orders_numbers_each_row():
     assert "[2]" in result
 
 
+def test_format_pending_orders_long_order_id_does_not_collide_with_next_column():
+    orders = [
+        Order(
+            order_id="ORD-20260715-0001",
+            sample_id="S001",
+            customer_name="고객A",
+            quantity=10,
+            status=OrderStatus.RESERVED,
+            created_at="2026-07-15T10:00:00",
+        )
+    ]
+
+    data_line = format_pending_orders(orders).splitlines()[3]
+
+    assert "ORD-20260715-0001 " in data_line  # 주문번호 뒤에 공백이 있어야 함(컬럼 붙음 방지)
+
+
 def test_format_stock_check_shows_shortfall_and_production_estimate():
     check = StockCheck(
         order_id="O001",

@@ -67,6 +67,16 @@ def test_format_waiting_job_details_numbers_each_row_and_shows_eta():
     assert "예상 완료" in result or "완료" in result
 
 
+def test_format_waiting_job_details_long_order_id_does_not_collide_with_next_column():
+    details = [
+        _detail(order_id="ORD-20260715-0001", remaining_turns=10, total_production_turns=10)
+    ]
+
+    data_line = format_waiting_job_details(details, current_remaining_turns=5).splitlines()[3]
+
+    assert "ORD-20260715-0001 " in data_line
+
+
 def test_format_turn_advance_result_empty_shows_guidance_message():
     result = format_turn_advance_result([])
 
