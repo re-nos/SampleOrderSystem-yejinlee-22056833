@@ -3,6 +3,7 @@ import os
 import pytest
 
 from sample_order_system.app import build_app
+from sample_order_system.models.inventory import InventoryRecord
 from sample_order_system.models.order import OrderStatus
 from sample_order_system.repository.order_repository import OrderRepository
 from sample_order_system.repository.production_queue_repository import (
@@ -34,7 +35,7 @@ def _run_app(tmp_path, inputs):
 def test_exits_immediately_on_zero(tmp_path):
     _, outputs, _ = _run_app(tmp_path, ["0"])
 
-    assert any("종료" in o or "Sample Order System" in o for o in outputs)
+    assert any("종료" in o or "생산주문관리 시스템" in o for o in outputs)
 
 
 def test_invalid_main_menu_choice_does_not_require_return_confirmation(tmp_path):
@@ -54,15 +55,44 @@ def test_register_sample_flow(tmp_path):
     assert sample_repo.get("S001").name == "시료A"
 
 
-def test_place_order_flow(tmp_path):
+def test_sample_menu_back_option_does_not_crash(tmp_path):
+    _, outputs, _ = _run_app(tmp_path, ["1", "0", ENTER, "0"])
+
+    assert any("종료" in o for o in outputs)
+
+
+def test_place_order_flow_with_confirmation(tmp_path):
     _, outputs, data_dir = _run_app(
         tmp_path,
-        ["1", "1", "S001", "시료A", "3.5", "0.8", ENTER, "2", "S001", "고객A", "10", ENTER, "0"],
+        [
+            "1", "1", "S001", "시료A", "3.5", "0.8", ENTER,
+            "2", "S001", "고객A", "10", "Y", ENTER,
+            "0",
+        ],
     )
 
-    assert any("O001" in o for o in outputs)
+    assert any("입력 내용 확인" in o for o in outputs)
+    assert any("예약 접수 완료" in o for o in outputs)
     order_repo = OrderRepository(file_path=os.path.join(data_dir, "order.json"))
-    assert order_repo.get("O001").status is OrderStatus.RESERVED
+    orders = order_repo.list()
+    assert len(orders) == 1
+    assert orders[0].status is OrderStatus.RESERVED
+    assert orders[0].order_id.startswith("ORD-")
+
+
+def test_place_order_cancelled_when_not_confirmed(tmp_path):
+    _, outputs, data_dir = _run_app(
+        tmp_path,
+        [
+            "1", "1", "S001", "시료A", "3.5", "0.8", ENTER,
+            "2", "S001", "고객A", "10", "N", ENTER,
+            "0",
+        ],
+    )
+
+    assert any("취소" in o for o in outputs)
+    order_repo = OrderRepository(file_path=os.path.join(data_dir, "order.json"))
+    assert order_repo.list() == []
 
 
 def test_approve_order_with_insufficient_stock_starts_production(tmp_path):
@@ -70,14 +100,14 @@ def test_approve_order_with_insufficient_stock_starts_production(tmp_path):
         tmp_path,
         [
             "1", "1", "S001", "시료A", "3.5", "0.8", ENTER,  # 시료 등록 (재고 0)
-            "2", "S001", "고객A", "10", ENTER,                # 주문 접수
-            "3", "O001", "Y", ENTER,                          # 승인 (재고부족 -> PRODUCING)
+            "2", "S001", "고객A", "10", "Y", ENTER,          # 주문 접수
+            "3", "1", "Y", ENTER,                            # 승인 목록 1번 선택 -> 승인
             "0",
         ],
     )
 
     assert any("PRODUCING" in o for o in outputs)
-    assert any("주문ID" in o for o in outputs)  # 승인 전 대기 목록 출력
+    assert any("승인 대기 중인 예약 목록" in o for o in outputs)  # 승인 전 대기 목록 출력
     assert any("부족분" in o for o in outputs)  # 승인 전 재고 확인 출력
 
 
@@ -86,15 +116,29 @@ def test_reject_order_flow(tmp_path):
         tmp_path,
         [
             "1", "1", "S001", "시료A", "3.5", "0.8", ENTER,
-            "2", "S001", "고객A", "10", ENTER,
-            "3", "O001", "N", ENTER,
+            "2", "S001", "고객A", "10", "Y", ENTER,
+            "3", "1", "N", ENTER,
             "0",
         ],
     )
 
     assert any("REJECTED" in o for o in outputs)
     order_repo = OrderRepository(file_path=os.path.join(data_dir, "order.json"))
-    assert order_repo.get("O001").status is OrderStatus.REJECTED
+    assert order_repo.list()[0].status is OrderStatus.REJECTED
+
+
+def test_approval_invalid_number_shows_error_without_crashing(tmp_path):
+    _, outputs, _ = _run_app(
+        tmp_path,
+        [
+            "1", "1", "S001", "시료A", "3.5", "0.8", ENTER,
+            "2", "S001", "고객A", "10", "Y", ENTER,
+            "3", "99", ENTER,  # 존재하지 않는 번호
+            "0",
+        ],
+    )
+
+    assert any("오류" in o for o in outputs)
 
 
 def test_monitoring_flow_shows_counts(tmp_path):
@@ -108,7 +152,7 @@ def test_monitoring_flow_shows_stock_status(tmp_path):
         tmp_path, ["1", "1", "S001", "시료A", "3.5", "0.8", ENTER, "4", "2", ENTER, "0"]
     )
 
-    assert any("S001" in o for o in outputs)
+    assert any("시료A" in o for o in outputs)
 
 
 def test_production_flow_shows_current_job_none(tmp_path):
@@ -125,8 +169,6 @@ def test_shipment_after_immediate_confirmation(tmp_path):
     app.sample_controller.register_sample(
         sample_id="S001", name="시료A", avg_production_time=3.5, yield_rate=0.8
     )
-    from sample_order_system.models.inventory import InventoryRecord
-
     app.approval_controller._inventory_repo.update(
         InventoryRecord(sample_id="S001", quantity=100)
     )
@@ -134,15 +176,16 @@ def test_shipment_after_immediate_confirmation(tmp_path):
     app.approval_controller.approve(order.order_id)
 
     outputs = []
-    app._input = ScriptedInput(["6", order.order_id, ENTER, "0"])
+    app._input = ScriptedInput(["6", "1", ENTER, "0"])
     app._output = outputs.append
     app.run()
 
     assert any("RELEASE" in o for o in outputs)
+    assert any("출고 가능 주문" in o for o in outputs)
 
 
 def test_invalid_sample_id_shows_error_without_crashing(tmp_path):
-    _, outputs, _ = _run_app(tmp_path, ["2", "UNKNOWN", "고객A", "10", ENTER, "0"])
+    _, outputs, _ = _run_app(tmp_path, ["2", "UNKNOWN", ENTER, "0"])
 
     assert any("오류" in o for o in outputs)
 
