@@ -34,7 +34,7 @@ def controller(sample_repository, order_repository):
 def test_place_order_creates_reserved_order(controller):
     order = controller.place_order(sample_id="S001", customer_name="고객A", quantity=10)
 
-    assert order.order_id == "O001"
+    assert order.order_id == "ORD-20260715-0001"
     assert order.sample_id == "S001"
     assert order.customer_name == "고객A"
     assert order.quantity == 10
@@ -63,5 +63,5 @@ def test_place_order_increments_order_id(controller):
     first = controller.place_order(sample_id="S001", customer_name="고객A", quantity=1)
     second = controller.place_order(sample_id="S001", customer_name="고객B", quantity=2)
 
-    assert first.order_id == "O001"
-    assert second.order_id == "O002"
+    assert first.order_id == "ORD-20260715-0001"
+    assert second.order_id == "ORD-20260715-0002"

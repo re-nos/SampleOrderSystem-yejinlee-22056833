@@ -37,4 +37,6 @@ class OrderController:
         return self._order_repo.add(order)
 
     def _next_order_id(self) -> str:
-        return f"O{len(self._order_repo.list()) + 1:03d}"
+        date_part = self._clock()[:10].replace("-", "")
+        seq = len(self._order_repo.list()) + 1
+        return f"ORD-{date_part}-{seq:04d}"
