@@ -27,6 +27,27 @@ def test_sample_repository_crud(sample_repository):
     assert sample_repository.list() == [sample]
 
 
+def test_sample_repository_search_by_name_is_case_insensitive_substring(sample_repository):
+    sample_repository.add(
+        Sample(sample_id="S001", name="Wafer Alpha", avg_production_time=3.5, yield_rate=0.8)
+    )
+    sample_repository.add(
+        Sample(sample_id="S002", name="시료B", avg_production_time=2.0, yield_rate=0.9)
+    )
+
+    result = sample_repository.search_by_name("alpha")
+
+    assert [s.sample_id for s in result] == ["S001"]
+
+
+def test_sample_repository_search_by_name_no_match_returns_empty_list(sample_repository):
+    sample_repository.add(
+        Sample(sample_id="S001", name="Wafer Alpha", avg_production_time=3.5, yield_rate=0.8)
+    )
+
+    assert sample_repository.search_by_name("없는이름") == []
+
+
 def test_order_repository_crud_with_status_enum(order_repository):
     order = Order(
         order_id="O001",
