@@ -77,6 +77,8 @@ def test_approve_order_with_insufficient_stock_starts_production(tmp_path):
     )
 
     assert any("PRODUCING" in o for o in outputs)
+    assert any("주문ID" in o for o in outputs)  # 승인 전 대기 목록 출력
+    assert any("부족분" in o for o in outputs)  # 승인 전 재고 확인 출력
 
 
 def test_reject_order_flow(tmp_path):

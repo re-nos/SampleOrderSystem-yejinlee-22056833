@@ -15,7 +15,11 @@ from sample_order_system.repository.production_queue_repository import (
 )
 from sample_order_system.repository.sample_repository import SampleRepository
 from sample_order_system.views import colors
-from sample_order_system.views.approval_view import format_approval_result
+from sample_order_system.views.approval_view import (
+    format_approval_result,
+    format_pending_orders,
+    format_stock_check,
+)
 from sample_order_system.views.monitoring_view import (
     format_order_counts,
     format_stock_status_list,
@@ -165,9 +169,12 @@ class App:
         self._output(format_order_registration_success(order))
 
     def _handle_approval(self) -> None:
-        order_id = self._prompt("주문 ID> ").strip()
-        decision = self._prompt("승인 [Y] / 거절 [N]> ").strip().upper()
+        self._output(format_pending_orders(self.approval_controller.list_pending_orders()))
 
+        order_id = self._prompt("승인/거절할 주문 ID> ").strip()
+        self._output(format_stock_check(self.approval_controller.check_stock(order_id)))
+
+        decision = self._prompt("승인 [Y] / 거절 [N]> ").strip().upper()
         if decision == "Y":
             order = self.approval_controller.approve(order_id)
         else:
